@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep  5 10:55:51 2023
+
+@author: shangfr
+"""
+
+
 import asyncio
 import json
 import logging
@@ -19,10 +27,9 @@ application = FastAPI()
 templates = Jinja2Templates(directory="templates")
 random.seed()  # Initialize the random number generator
 
-
 @application.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> Response:
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("line-race.html", {"request": request})
 
 
 async def generate_random_data(request: Request) -> Iterator[str]:
@@ -43,7 +50,7 @@ async def generate_random_data(request: Request) -> Iterator[str]:
             }
         )
         yield f"data:{json_data}\n\n"
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
 
 
 @application.get("/chart-data")
@@ -52,3 +59,37 @@ async def chart_data(request: Request) -> StreamingResponse:
     response.headers["Cache-Control"] = "no-cache"
     response.headers["X-Accel-Buffering"] = "no"
     return response
+
+
+from fastapi.responses import JSONResponse
+
+@application.get("/local_data2")
+async def read_json():
+    filepath = "data/life-expectancy-table.json"
+    with open(filepath) as json_file:
+        data = json.load(json_file)
+        output = [{"data":data,"countries":[
+          'Finland',
+          'France',
+          'Germany',
+          'Iceland',
+          'Norway',
+          'Poland',
+          'Russia',
+          'United Kingdom'
+        ]}]
+    return JSONResponse(content=output)
+
+import pandas as pd
+
+@application.get("/local_data")
+async def read_json():
+    filepath = "data/st.csv"
+    df = pd.read_csv(filepath)
+    df['value'] = df['value'].round(2)
+    data = df.values.tolist()
+    data.insert(0,df.columns.tolist())
+    output = [{"data":data,"countries":df['name'].unique().tolist()}]
+    return JSONResponse(content=output)
+
+

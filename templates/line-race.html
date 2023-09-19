@@ -1,0 +1,194 @@
+<!--
+	THIS EXAMPLE WAS DOWNLOADED FROM https://echarts.apache.org/examples/en/editor.html?c=line-race&theme=dark
+-->
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+<head>
+  <meta charset="utf-8">
+</head>
+<body style="height: 100%; margin: 0">
+  <div id="container" style="height: 100%"></div>
+
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/jquery"></script>
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  
+  <script src="https://cdn.bootcss.com/html2canvas/0.5.0-beta4/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/RecordRTC/5.5.9/RecordRTC.js"></script>
+  <script src="https://cdn.bootcss.com/FileSaver.js/1.3.8/FileSaver.min.js"></script>
+  
+  <!-- Uncomment this line if you want to dataTool extension
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.3/dist/extension/dataTool.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to use gl extension
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts-gl@2/dist/echarts-gl.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to echarts-stat extension
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts-stat@latest/dist/ecStat.min.js"></script>
+  -->
+  <!-- Uncomment this line if you want to use map
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/china.js"></script>
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js"></script>
+  -->
+  <!-- Uncomment these two lines if you want to use bmap extension
+  <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=YOUR_API_KEY"></script>
+  <script type="text/javascript" src="https://fastly.jsdelivr.net/npm/echarts@5.4.3/dist/extension/bmap.min.js"></script>
+  -->
+
+  <script type="text/javascript">
+    var dom = document.getElementById('container');
+    var myChart = echarts.init(dom, 'dark', {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+    var app = {};
+    var ROOT_PATH = 'https://echarts.apache.org/examples';
+    var option;
+
+    $.get(
+		'local_data',
+  function (_rawData) {
+    run(_rawData);
+  }
+);
+function run(_rawData) {
+  const countries = _rawData[0].countries;
+  const datasetWithFilters = [];
+  const seriesList = [];
+  echarts.util.each(countries, function (country) {
+    var datasetId = 'dataset_' + country;
+    datasetWithFilters.push({
+      id: datasetId,
+      fromDatasetId: 'dataset_raw',
+      transform: {
+        type: 'filter',
+        config: {
+          and: [
+            { dimension: 'trade_date', gte: 2023 },
+            { dimension: 'name', '=': country }
+          ]
+        }
+      }
+    });
+    seriesList.push({
+      type: 'line',
+      //areaStyle: {},
+      lineStyle: {
+            width: 5
+        },
+      datasetId: datasetId,
+      showSymbol: false,
+      name: country,
+      endLabel: {
+        show: true,
+        fontSize: 16,
+        formatter: function (params) {
+          return params.value[1] + ': ' + params.value[2]+ '%';
+        }
+      },
+      labelLayout: {
+        moveOverlap: 'shiftY'
+      },
+      emphasis: {
+        focus: 'series'
+      },
+      encode: {
+        x: 'trade_date',
+        y: 'value',
+        label: ['name', 'value'],
+        itemName: 'trade_date',
+        tooltip: ['value']
+      }
+    });
+  });
+  option = {
+    animationDuration: 50000,
+    graphic: {
+    elements: [
+        {
+          type: 'text',
+          right: 160,
+          bottom: 80,
+          style: {
+            text: '概念板块-2023',
+            font: 'bolder 80px monospace',
+            fill: 'rgba(100, 100, 100, 0.25)'
+          },
+          z: 100
+        }
+      ]
+    },
+    dataset: [
+      {
+        id: 'dataset_raw',
+        source: _rawData[0].data
+      },
+      ...datasetWithFilters
+    ],
+    title: {
+      text: '累计收益率',
+      left: '5%',
+      top: '3%'
+    },
+    tooltip: {
+      order: 'valueDesc',
+      trigger: 'axis'
+    },
+    legend: {
+      data: countries,
+      //orient: 'vertical',
+      right: '15%',
+      top: '5%'
+    },
+    xAxis: {
+      type: 'category',
+      nameLocation: 'middle'
+    },
+    yAxis: {
+      name: ''
+    },
+    grid: {
+      right: 140
+    },
+    series: seriesList
+  };
+  myChart.setOption(option);
+}
+
+    if (option && typeof option === 'object') {
+      myChart.setOption(option);
+      
+    }
+
+    window.addEventListener('resize', myChart.resize);
+
+        setTimeout(function(){
+            //开始录制
+            exportToVideo(65000)
+        },500)
+        
+        function exportToVideo(time){
+            //time 为录制时长 毫秒
+            time = time || 0
+            
+            let $canvas = document.querySelector('#container canvas')
+            
+            var recordRTC = RecordRTC($canvas, {
+                type: 'canvas'
+            });
+            //开始录制
+            recordRTC.startRecording();
+            
+            setTimeout(function(){
+                //录制结束
+                recordRTC.stopRecording(function(videoURL) {
+                    console.log(videoURL)
+                
+                    var recordedBlob = recordRTC.getBlob();
+                    //recordRTC.getDataURL(function(dataURL) { });
+                    saveAs(recordedBlob, "test.mp4");
+                });
+            }, time)
+        }
+          </script>
+</body>
+</html>
